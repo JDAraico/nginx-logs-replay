@@ -291,7 +291,7 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
                     if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                 }
             }
-            resultLogger.info(`${response.status}     ${originalStatus}     ${Moment.unix(timestamp / 1000).format(args.datesFormat)}     ${Moment.unix(sendTime / 1000).format(args.datesFormat)}     ${(responseTime / 1000).toFixed(2)}     ${url}     ${JSON.stringify(response.data)}`)
+            resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${Moment.unix(sendTime / 1000).format(args.datesFormat)}  |  response_time:${(responseTime / 1000).toFixed(2)}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
         })
         .catch(function (error) {
             if (!error.response) {
@@ -324,7 +324,7 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`${error.response.status}     ${originalStatus}     ${Moment.unix(timestamp / 1000).format(args.datesFormat)}     ${Moment.unix(sendTime / 1000).format(args.datesFormat)}     ${(responseTime / 1000).toFixed(2)}     ${url}`)
+                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${Moment.unix(sendTime / 1000).format(args.datesFormat)}  |  response_time:${(responseTime / 1000).toFixed(2)}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents === dataArray.length) {
