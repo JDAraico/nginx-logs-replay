@@ -219,12 +219,12 @@ parser.read(args.filePath, function (row) {
                 debugLogger.info(`Sleeping ${timeToSleep} ms`);
                 await sleep(timeToSleep);
             } else {
-                if (dataArray[i].timestamp !== dataArray[i + 1].timestamp) {
-                    const timeToSleep = ((dataArray[i + 1].timestamp - dataArray[i].timestamp) / args.ratio);
-                    debugLogger.info(`Sleeping ${timeToSleep} ms`);
-                    totalSleepTime += timeToSleep;
-                    await sleep(timeToSleep);
-                }
+                //if (dataArray[i].timestamp !== dataArray[i + 1].timestamp) {
+                    //const timeToSleep = ((dataArray[i + 1].timestamp - dataArray[i].timestamp) / args.ratio);
+                    debugLogger.info(`Sleeping 1000 ms`);
+                    //totalSleepTime += timeToSleep;
+                    await sleep(1000);
+                //}
             }
         }
     }
