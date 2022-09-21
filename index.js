@@ -262,7 +262,7 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
     try {
       if (body) config.data = JSON.parse(body);
     } catch(error) {
-      resultLogger.info(`replay_status: -  |  original_status:${originalStatus}  |  url:${url}  |  error: ${error}  |  request_info: Method:${method} - Agent:${agent} - Body:${body} - Headers:${headers}`)
+      resultLogger.info(`replay_status: -  |  original_status:${originalStatus}  |  url:${url}  |  error: ${error}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
       numberOfFailedEvents += 1;
       return;
     }
