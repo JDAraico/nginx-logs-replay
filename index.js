@@ -259,7 +259,13 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
     if (args.username) config.auth.username = args.username;
     if (args.password) config.auth.password = args.password;
     if (args.timeout) config.timeout = args.timeout;
-    if (body) config.data = JSON.parse(body);
+    try {
+      if (body) config.data = JSON.parse(body);
+    } catch(error) {
+      resultLogger.info(`replay_status: -  |  original_status:${originalStatus}  |  url:${url}  |  error: ${error}  |  request_info: Method:${method} - Agent:${agent} - Body:${body} - Headers:${headers}`)
+      numberOfFailedEvents += 1;
+      return;
+    }
     if (headers) config.headers = JSON.parse(headers);
     if (config.headers.host) delete config.headers.host;
     axios(config)
