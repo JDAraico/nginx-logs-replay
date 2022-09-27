@@ -330,7 +330,7 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${Moment.unix(sendTime / 1000).format(args.datesFormat)}  |  response_time:${(responseTime / 1000).toFixed(2)}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}`)
+                                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents === dataArray.length) {
