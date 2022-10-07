@@ -183,6 +183,7 @@ parser.read(args.filePath, function (row) {
     startTime = +new Date();
     if (dataArray.length===0) mainLogger.info(`No logs for the replaying`);
     for (let i = 0; i < dataArray.length; i++) {
+        if (dataArray[i].status != '500' && dataArray[i].status != '499') {
         const now = +new Date();
         finishTime = now;
         let requestMethod = dataArray[i].req.split(" ")[0];
@@ -227,6 +228,7 @@ parser.read(args.filePath, function (row) {
                 //}
             }
         }
+      }
     }
 });
 
