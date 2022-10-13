@@ -210,7 +210,7 @@ parser.read(args.filePath, function (row) {
             stats[statsUrl] ? stats[statsUrl] += 1 : stats[statsUrl] = 1;
         }
         currentTimestamp=dataArray[i].timestamp;
-        sendRequest(requestMethod, requestUrl, now, dataArray[i].agent, dataArray[i].status, dataArray[i].body, dataArray[i].headers, dataArray[i].timestamp);
+        await sendRequest(requestMethod, requestUrl, now, dataArray[i].agent, dataArray[i].status, dataArray[i].body, dataArray[i].headers, dataArray[i].timestamp);
         
         if (!args.skipSleep && dataArray[i].timestamp !== dataArray[dataArray.length - 1].timestamp) {
             if (args.scaleMode) {
@@ -253,7 +253,7 @@ function sleep(ms) {
     });
 }
 
-function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, authToken, timestamp) {
+async function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, authToken, timestamp) {
     const httpsAgent = new https.Agent({
         rejectUnauthorized: !args.skipSsl
     });
@@ -270,7 +270,7 @@ function sendRequest(method, url, sendTime, agent, originalStatus, body, headers
     }
     if (headers) config.headers = JSON.parse(headers);
     if (config.headers.host) delete config.headers.host;
-    axios(config)
+    await axios(config)
         .then(function (response) {
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
             if (originalStatus !== response.status.toString()) {
