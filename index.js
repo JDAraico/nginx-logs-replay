@@ -198,6 +198,10 @@ parser.read(args.filePath, function (row) {
         }else{
             requestUrl = dataArray[i].req.split(" ")[1];
         }
+            
+        if(requestUrl.includes('artifacts'))
+           continue;
+            
         debugLogger.info(`Sending ${requestMethod} request to ${requestUrl} at ${now}`);
         if (args.stats) {
             let statsUrl = new URL(args.prefix + requestUrl);
@@ -220,12 +224,12 @@ parser.read(args.filePath, function (row) {
                 debugLogger.info(`Sleeping ${timeToSleep} ms`);
                 await sleep(timeToSleep);
             } else {
-                //if (dataArray[i].timestamp !== dataArray[i + 1].timestamp) {
-                    //const timeToSleep = ((dataArray[i + 1].timestamp - dataArray[i].timestamp) / args.ratio);
-                    debugLogger.info(`Sleeping 1000 ms`);
-                    //totalSleepTime += timeToSleep;
-                    await sleep(1000);
-                //}
+                if (dataArray[i].timestamp !== dataArray[i + 1].timestamp) {
+                    const timeToSleep = ((dataArray[i + 1].timestamp - dataArray[i].timestamp) / args.ratio);
+                    debugLogger.info(`Sleeping ${timeToSleep} ms`);
+                    totalSleepTime += timeToSleep;
+                    await sleep(timeToSleep);
+                }
             }
         }
       }
