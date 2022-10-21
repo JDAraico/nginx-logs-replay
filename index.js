@@ -11,7 +11,7 @@ const Stats = require('fast-stats').Stats;
 
 program.version(process.env.npm_package_version);
 
-const defaultFormat = '$remote_addr [$time_local] "$request" $status $body_bytes_sent req_time:$request_time req_body:$request_body resp_body:$resp_body req_headers:$request_headers';
+const defaultFormat = '$remote_addr [$time_local] "$request" $status $body_bytes_sent req_time:$request_time req_body:$req_body resp_body:$resp_body req_headers:{$request_headers} resp_headers:{$resp_headers}';
 const defaultFormatTime = 'DD/MMM/YYYY:HH:mm:ss Z';
 
 program
@@ -172,7 +172,10 @@ parser.read(args.filePath, function (row) {
             req: row.request,
             body: row.request_body,
             headers: row.request_headers,
-            timestamp
+            timestamp,
+            resp_body: row.resp_body,
+            resp_headers: row.resp_headers,
+            request_time: row.request_time
         });
         if (args.scaleMode) {
             secondsRepeats[timestamp] ? secondsRepeats[timestamp] += 1 : secondsRepeats[timestamp] = 1;
@@ -214,7 +217,7 @@ parser.read(args.filePath, function (row) {
             stats[statsUrl] ? stats[statsUrl] += 1 : stats[statsUrl] = 1;
         }
         currentTimestamp=dataArray[i].timestamp;
-        await sendRequest(requestMethod, requestUrl, now, dataArray[i].agent, dataArray[i].status, dataArray[i].body, dataArray[i].headers, dataArray[i].timestamp);
+        await sendRequest(requestMethod, requestUrl, now, dataArray[i].agent, dataArray[i].status, dataArray[i].body, dataArray[i].headers, dataArray[i].timestamp, dataArray[i].resp_body, dataArray[i].resp_headers, dataArray[i].request_time);
         
         if (!args.skipSleep && dataArray[i].timestamp !== dataArray[dataArray.length - 1].timestamp) {
             if (args.scaleMode) {
@@ -257,7 +260,7 @@ function sleep(ms) {
     });
 }
 
-async function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, authToken, timestamp) {
+async function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, timestamp, resp_body, resp_headers, request_time ) {
     const httpsAgent = new https.Agent({
         rejectUnauthorized: !args.skipSsl
     });
@@ -272,10 +275,17 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
       numberOfFailedEvents += 1;
       return;
     }
-    if (headers) config.headers = JSON.parse(headers);
+    if (headers) config.headers = JSON.parse('{'+ headers + '}');
     if (config.headers.host) delete config.headers.host;
     await axios(config)
         .then(function (response) {
+        
+        //debugLogger.info(`--------REPLAYED: ${JSON.stringify(response.headers)}`);
+        //debugLogger.info(`--------ORIGINAL: ${resp_headers}`);
+
+        //debugLogger.info(`--------REPLAYED: ${JSON.stringify(response.data)}`);
+        //debugLogger.info(`--------ORIGINAL: ${resp_body}`);
+        
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
             if (originalStatus !== response.status.toString()) {
                 debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
@@ -303,7 +313,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                 }
             }
-            resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${Moment.unix(sendTime / 1000).format(args.datesFormat)}  |  response_time:${(responseTime / 1000).toFixed(2)}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
+            resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
         })
         .catch(function (error) {
             if (!error.response) {
@@ -336,7 +346,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
+                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents === dataArray.length) {
