@@ -8,6 +8,7 @@ const Winston = require('winston');
 const {program} = require('commander');
 const rl = require("readline");
 const Stats = require('fast-stats').Stats;
+const _ = require('lodash');
 
 program.version(process.env.npm_package_version);
 
@@ -260,7 +261,7 @@ function sleep(ms) {
     });
 }
 
-async function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, timestamp, resp_body, resp_headers, request_time ) {
+async function sendRequest(method, url, sendTime, agent, originalStatus, body, headers, timestamp, resp_body, resp_headers, request_time) {
     const httpsAgent = new https.Agent({
         rejectUnauthorized: !args.skipSsl
     });
@@ -289,9 +290,13 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
             if (originalStatus !== response.status.toString()) {
                 debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
-                numberOfFailedEvents += 1;
             } else {
-                numberOfSuccessfulEvents += 1;
+                let originalHeaders = JSON.parse('{' + resp_headers + '}');
+                let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
+                if (headersAreEqual)
+                    numberOfSuccessfulEvents += 1;
+                else
+                    numberOfFailedEvents += 1;
             }
             let responseTime = +new Date() - sendTime;
             totalResponseTime += responseTime;
@@ -413,4 +418,23 @@ function generateReport(){
         });
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
+}
+function evaluateHeaders(originalHeaders, responseHeaders){
+  if (originalHeaders["x-total-count"])
+        if (originalHeaders["x-total-count"] != replayedlHeaders["x-total-count"])
+                return false;
+
+  if (originalHeaders["x-continuation-token"])
+        if (originalHeaders["x-continuation-token"] != replayedlHeaders["x-continuation-token"])
+                return false;
+
+  if (originalHeaders["content-type"])
+        if (originalHeaders["content-type"] != replayedlHeaders["content-type"])
+                return false;
+
+  if (originalHeaders["location"])
+        if (originalHeaders["location"] != replayedlHeaders["location"])
+                return false;
+
+  return true;
 }
