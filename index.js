@@ -279,21 +279,14 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     if (headers) config.headers = JSON.parse('{'+ headers + '}');
     if (config.headers.host) delete config.headers.host;
     await axios(config)
-        .then(function (response) {
-        
-        //debugLogger.info(`--------REPLAYED: ${JSON.stringify(response.headers)}`);
-        //debugLogger.info(`--------ORIGINAL: ${resp_headers}`);
-
-        //debugLogger.info(`--------REPLAYED: ${JSON.stringify(response.data)}`);
-        //debugLogger.info(`--------ORIGINAL: ${resp_body}`);
-        
+        .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
             if (originalStatus !== response.status.toString()) {
                 debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
             } else {
                 let originalHeaders = JSON.parse('{' + resp_headers + '}');
                 let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
-                if (headersAreEqual)
+                if (headersAreEqual && _.isEqual(resp_body, response.data))
                     numberOfSuccessfulEvents += 1;
                 else
                     numberOfFailedEvents += 1;
@@ -419,7 +412,7 @@ function generateReport(){
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
 }
-function evaluateHeaders(originalHeaders, responseHeaders){
+function evaluateHeaders(originalHeaders, replayedlHeaders){
   if (originalHeaders["x-total-count"])
         if (originalHeaders["x-total-count"] != replayedlHeaders["x-total-count"])
                 return false;
