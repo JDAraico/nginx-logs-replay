@@ -412,21 +412,21 @@ function generateReport(){
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
 }
-function evaluateHeaders(originalHeaders, replayedlHeaders){
+function evaluateHeaders(originalHeaders, replayedHeaders){
   if (originalHeaders["x-total-count"])
-        if (originalHeaders["x-total-count"] != replayedlHeaders["x-total-count"])
+        if (originalHeaders["x-total-count"] != replayedHeaders["x-total-count"])
                 return false;
 
   if (originalHeaders["x-continuation-token"])
-        if (originalHeaders["x-continuation-token"] != replayedlHeaders["x-continuation-token"])
+        if (originalHeaders["x-continuation-token"] != replayedHeaders["x-continuation-token"])
                 return false;
 
   if (originalHeaders["content-type"])
-        if (originalHeaders["content-type"] != replayedlHeaders["content-type"])
+        if (originalHeaders["content-type"] != replayedHeaders["content-type"])
                 return false;
 
   if (originalHeaders["location"])
-        if (originalHeaders["location"] != replayedlHeaders["location"])
+        if (originalHeaders["location"] != replayedHeaders["location"])
                 return false;
 
   return true;
