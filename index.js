@@ -281,37 +281,40 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     await axios(config)
         .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
-            if (originalStatus !== response.status.toString()) {
-                debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
-            } else {
-                let originalHeaders = JSON.parse('{' + resp_headers + '}');
-                let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
-                if (headersAreEqual && _.isEqual(resp_body, response.data))
-                    numberOfSuccessfulEvents += 1;
-                else
-                    numberOfFailedEvents += 1;
-            }
-            let responseTime = +new Date() - sendTime;
-            totalResponseTime += responseTime;
-            numStats.push(responseTime);
-            if (response.data.debug){
-                if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
-                if (response.data.debug.mongoTxFast) statsMongoTxFastTime.push(response.data.debug.mongoTxFast);
-                if (response.data.debug.mongoTxFull) statsMongoTxFullTime.push(response.data.debug.mongoTxFull);
-                if (response.data.debug.clickhouse) statsClickHouseTime.push(response.data.debug.clickhouse);
-                if (response.data.debug.php) statsPHPTime.push(response.data.debug.php);
-                if (response.data.debug.redis){
-                    if (response.data.debug.redis.read_num) statsRedisReadNumber.push(response.data.debug.redis.read_num);
-                    if (response.data.debug.redis.read_time) statsRedisReadTime.push(response.data.debug.redis.read_time);
-                    if (response.data.debug.redis.write_num) statsRedisWriteNumber.push(response.data.debug.redis.write_num);
-                    if (response.data.debug.redis.write_time) statsRedisWriteTime.push(response.data.debug.redis.write_time);
+            if (response.status.toString() != '401') {
+
+                if (originalStatus !== response.status.toString()) {
+                    debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
+                } else {
+                    let originalHeaders = JSON.parse('{' + resp_headers + '}');
+                    let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
+                    if (headersAreEqual && _.isEqual(resp_body, response.data))
+                        numberOfSuccessfulEvents += 1;
+                    else
+                        numberOfFailedEvents += 1;
                 }
-                if (response.data.debug.eth_node){
-                    if (response.data.debug.eth_node.num) statsEthNodeNumber.push(response.data.debug.eth_node.num);
-                    if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
+                    let responseTime = +new Date() - sendTime;
+                    totalResponseTime += responseTime;
+                    numStats.push(responseTime);
+                    if (response.data.debug){
+                    if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
+                    if (response.data.debug.mongoTxFast) statsMongoTxFastTime.push(response.data.debug.mongoTxFast);
+                    if (response.data.debug.mongoTxFull) statsMongoTxFullTime.push(response.data.debug.mongoTxFull);
+                    if (response.data.debug.clickhouse) statsClickHouseTime.push(response.data.debug.clickhouse);
+                    if (response.data.debug.php) statsPHPTime.push(response.data.debug.php);
+                    if (response.data.debug.redis){
+                        if (response.data.debug.redis.read_num) statsRedisReadNumber.push(response.data.debug.redis.read_num);
+                        if (response.data.debug.redis.read_time) statsRedisReadTime.push(response.data.debug.redis.read_time);
+                        if (response.data.debug.redis.write_num) statsRedisWriteNumber.push(response.data.debug.redis.write_num);
+                        if (response.data.debug.redis.write_time) statsRedisWriteTime.push(response.data.debug.redis.write_time);
+                    }
+                    if (response.data.debug.eth_node){
+                        if (response.data.debug.eth_node.num) statsEthNodeNumber.push(response.data.debug.eth_node.num);
+                        if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
+                    }
                 }
+                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
             }
-            resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
         })
         .catch(function (error) {
             if (!error.response) {
