@@ -307,7 +307,10 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
         .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
             if (response.status.toString() != '401') {
-
+                let responseTime = +new Date() - sendTime;
+                totalResponseTime += responseTime;
+                numStats.push(responseTime);
+                
                 if (originalStatus !== response.status.toString()) {
                     debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
                 } else {
@@ -321,9 +324,6 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         return;
                     }
                 }
-                    let responseTime = +new Date() - sendTime;
-                    totalResponseTime += responseTime;
-                    numStats.push(responseTime);
                     if (response.data.debug){
                     if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
                     if (response.data.debug.mongoTxFast) statsMongoTxFastTime.push(response.data.debug.mongoTxFast);
