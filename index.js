@@ -3,6 +3,7 @@ const Moment = require('moment');
 const fs = require('fs');
 const NginxParser = require('nginxparser');
 const axios = require('axios').default;
+const axiosRetry = require('axios-retry');
 const https = require('https');
 const Winston = require('winston');
 const {program} = require('commander');
@@ -92,9 +93,22 @@ const resultLogger = Winston.createLogger({
     transports: resultLoggerTransports,
 });
 
+axiosRetry(axios, {
+    retries: 3, // number of retries
+    retryDelay: (retryCount) => {
+        resultLogger.info(`retry attempt: ${retryCount}`);
+        return retryCount * 2000; // time interval between retries
+    },
+    retryCondition: (error) => {
+        // if retry condition is not specified, by default idempotent requests are retried
+        return error.response.status === 503;
+    },
+});
+
 const dataArray = [];
 let numberOfSuccessfulEvents = 0;
 let numberOfFailedEvents = 0;
+let numberOfSkippedEvents = 0;
 let totalResponseTime = 0;
 let startTime = 0;
 let finishTime = 0;
@@ -278,6 +292,11 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     }
     if (headers) config.headers = JSON.parse('{'+ headers + '}');
     if (config.headers.host) delete config.headers.host;
+    if (originalStatus == '401') {
+        resultLogger.info(`replay_status: -  |  original_status:${originalStatus}(Skipped)  |  url:${url}`)
+        numberOfSkippedEvents += 1;
+        return;
+    }
     await axios(config)
         .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
@@ -313,7 +332,10 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(response.data)}`)
+                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_body:${JSON.stringify(response.data)}  |  original_body:${body}  |	replay_resp_headers:${response.headers}  |	original_resp_headers:${resp_headers}`)
+            } else {
+                numberOfSkippedEvents += 1;
+                resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  |  original_status:${originalStatus}  |  url:${url}`)
             }
         })
         .catch(function (error) {
@@ -347,10 +369,10 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  replay_response:${JSON.stringify(error.response.data)}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
+                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_body:${JSON.stringify(error.response.data)}  |  original_body:${body}  |  replay_resp_headers:${response.headers}  |  original_resp_headers:${resp_headers}`)
             }
         }).then(function () {
-        if (numberOfFailedEvents + numberOfSuccessfulEvents === dataArray.length) {
+        if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
             generateReport();
         }
     });
@@ -376,7 +398,7 @@ function getResponseTime(stat, toSeconds=false, toFixed=3){
 function generateReport(){
     mainLogger.info('___________________________________________________________________________');
     mainLogger.info(`Host: ${args.prefix}. Start time: ${startProcessTime.toISOString()}. Finish time: ${(new Date()).toISOString()}. Options: ${args.customQueryParams}`);
-    mainLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents}. Number of the failed requests: ${numberOfFailedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents)).toFixed(2)}%.`);
+    mainLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents}. Number of the failed requests: ${numberOfFailedEvents}. Number of skipped requests: ${numberOfSkippedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents)).toFixed(2)}%.`);
     mainLogger.info(`Response time: ${JSON.stringify(getResponseTime(numStats,true))}`);
     mainLogger.info(`Percentile: ${JSON.stringify(getPercentile(numStats, true))}`);
     if (statsPHPTime.length!==0) mainLogger.info(`PHP response time: ${JSON.stringify(getResponseTime(statsPHPTime, false))}`);
