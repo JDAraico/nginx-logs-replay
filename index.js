@@ -315,8 +315,11 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
                     if (headersAreEqual && _.isEqual(resp_body, response.data))
                         numberOfSuccessfulEvents += 1;
-                    else
+                    else {
                         numberOfFailedEvents += 1;
+                        resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:true |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_body:${JSON.stringify(response.data)}  |  original_body:${(body === undefined) ? '[]' : '{' + body + '}'}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                        return;
+                    }
                 }
                     let responseTime = +new Date() - sendTime;
                     totalResponseTime += responseTime;
