@@ -316,13 +316,17 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                 } else {
                     let originalHeaders = JSON.parse('{' + resp_headers + '}');
                     let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
-                    if (headersAreEqual && _.isEqual(resp_body, response.data))
-                        numberOfSuccessfulEvents += 1;
-                    else {
+                    if (!headersAreEqual) {
                         numberOfFailedEvents += 1;
-                        resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:true |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : '{' + resp_body + '}'}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                        resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Headers |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
+                    if ( !_.isEqual(resp_body, response.data)) {
+                    numberOfFailedEvents += 1;
+                    resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Body |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                    return;
+                    }
+                    numberOfSuccessfulEvents += 1;
                 }
                     if (response.data.debug){
                     if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
@@ -341,7 +345,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : '{' + resp_body + '}'}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
             } else {
                 numberOfSkippedEvents += 1;
                 resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  |  original_status:${originalStatus}  |  url:${url}`)
@@ -378,7 +382,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(error.response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : '{' + resp_body + '}'}  |  replay_resp_headers:${JSON.stringify(error.response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(error.response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(error.response.headers)}  |  original_resp_headers:{${resp_headers}}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
