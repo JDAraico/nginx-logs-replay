@@ -88,6 +88,11 @@ if (args.logFile !== '') {
     }));
 }
 
+const resultLogger = Winston.createLogger({
+    format: Winston.format.simple(),
+    transports: resultLoggerTransports,
+});
+
 
 let summaryLoggerTransports = [
     new Winston.transports.Console({
