@@ -88,9 +88,36 @@ if (args.logFile !== '') {
     }));
 }
 
-const resultLogger = Winston.createLogger({
+
+let summaryLoggerTransports = [
+    new Winston.transports.Console({
+        level: 'info',
+        format: Winston.format.combine(
+            Winston.format.colorize(),
+            Winston.format.printf(
+                (info) => {
+                    return `${info.message}`;
+                })
+        )
+    }),
+];
+if (args.logFile !== '') {
+    summaryLoggerTransports.push(new Winston.transports.File({
+        filename: args.logFile + '_summary',
+        level: 'info',
+        format: Winston.format.combine(
+            Winston.format.colorize(),
+            Winston.format.printf(
+                (info) => {
+                    return `${info.message}`;
+                })
+        )
+    }));
+}
+
+const summaryLogger = Winston.createLogger({
     format: Winston.format.simple(),
-    transports: resultLoggerTransports,
+    transports: summaryLoggerTransports,
 });
 
 axiosRetry(axios, {
@@ -448,6 +475,29 @@ function generateReport(){
             }
         });
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
+    }
+
+    summaryLogger.info('___________________________________________________________________________');
+    summaryLogger.info(`Host: ${args.prefix}. Start time: ${startProcessTime.toISOString()}. Finish time: ${(new Date()).toISOString()}. Options: ${args.customQueryParams}`);
+    summaryLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents}. Number of the failed requests: ${numberOfFailedEvents}. Number of skipped requests: ${numberOfSkippedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents)).toFixed(2)}%.`);
+    summaryLogger.info(`Response time: ${JSON.stringify(getResponseTime(numStats,true))}`);
+    summaryLogger.info(`Percentile: ${JSON.stringify(getPercentile(numStats, true))}`);
+
+    summaryLogger.info(`Total requests time: ${(finishTime - startTime) / 1000} seconds. Total sleep time: ${(totalSleepTime / 1000).toFixed(2)} seconds.`);
+    summaryLogger.info(`Original time: ${(dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp) / 1000} seconds. Original rps: ${(1000 * dataArray.length / (dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp)).toFixed(4)}. Replay rps: ${((numberOfSuccessfulEvents+numberOfFailedEvents) * 1000 / (finishTime - startTime)).toFixed(4)}. Ratio: ${args.ratio}.`);
+    if (args.stats) {
+        const hiddenStats = {};
+        let sortedStats = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
+        summaryLogger.info('___________________________________________________________________________');
+        summaryLogger.info('Stats results:');
+        sortedStats.forEach(x => {
+            if (stats[x] > args.hideStatsLimit) {
+                summaryLogger.info(`${x} : ${stats[x]}`)
+            } else {
+                hiddenStats[stats[x]] ? hiddenStats[stats[x]] += 1 : hiddenStats[stats[x]] = 1;
+            }
+        });
+        if (Object.keys(hiddenStats) > 0) summaryLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
 }
 function evaluateHeaders(originalHeaders, replayedHeaders){
