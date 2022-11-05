@@ -126,7 +126,7 @@ const summaryLogger = Winston.createLogger({
 });
 
 axiosRetry(axios, {
-    retries: 3, // number of retries
+    retries: 1000000, // number of retries
     retryDelay: (retryCount) => {
         resultLogger.info(`retry attempt: ${retryCount}`);
         return retryCount * 2000; // time interval between retries
@@ -217,7 +217,7 @@ parser.read(args.filePath, function (row) {
             agent: row.http_user_agent,
             status: row.status,
             req: row.request,
-            body: row.request_body,
+            body: row.req_body,
             headers: row.request_headers,
             timestamp,
             resp_body: row.resp_body,
@@ -325,7 +325,11 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
       }
       return;
     }
-    if (headers) config.headers = JSON.parse('{'+ headers + '}');
+    headers = JSON.parse('{'+ headers + '}');
+    let len = new TextEncoder().encode(body).length;
+    headers['content-length'] = len;
+
+    if (headers) config.headers = headers;
     if (config.headers.host) delete config.headers.host;
     if (originalStatus == '401') {
         resultLogger.info(`replay_status: -  |  original_status:${originalStatus}(Skipped)  |  url:${url}`)
@@ -482,7 +486,7 @@ function generateReport(){
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
 
-    summaryLogger.info('___________________________________________________________________________');
+    /*summaryLogger.info('___________________________________________________________________________');
     summaryLogger.info(`Host: ${args.prefix}. Start time: ${startProcessTime.toISOString()}. Finish time: ${(new Date()).toISOString()}. Options: ${args.customQueryParams}`);
     summaryLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents}. Number of the failed requests: ${numberOfFailedEvents}. Number of skipped requests: ${numberOfSkippedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents)).toFixed(2)}%.`);
     summaryLogger.info(`Response time: ${JSON.stringify(getResponseTime(numStats,true))}`);
@@ -503,7 +507,7 @@ function generateReport(){
             }
         });
         if (Object.keys(hiddenStats) > 0) summaryLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
-    }
+    }*/
 }
 function evaluateHeaders(originalHeaders, replayedHeaders){
   if (originalHeaders["x-total-count"])
