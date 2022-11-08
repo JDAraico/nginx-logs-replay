@@ -107,7 +107,7 @@ let summaryLoggerTransports = [
         )
     }),
 ];
-if (args.logFile !== '') {
+if (args.logFile !== '' && args.summary) {
     summaryLoggerTransports.push(new Winston.transports.File({
         filename: args.logFile + '_summary',
         level: 'info',
