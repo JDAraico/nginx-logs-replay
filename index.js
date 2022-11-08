@@ -38,7 +38,8 @@ program
     .option('--filterOnly [strings...]', 'filter logs for replaying, eg: "/test data .php"', [])
     .option('--filterSkip [strings...]', 'skip logs for replaying, eg: "/test data .php"', [])
     .option('--customQueryParams [strings...]', 'additional query params fro requests, eg: "test=true size=3"', [])
-    .option('--hideStatsLimit <int>', 'limit number of stats', '0');
+    .option('--hideStatsLimit <int>', 'limit number of stats', '0')
+    .option('--summary', 'summary log', false);
 
 program.parse(process.argv);
 const args = program.opts();
@@ -141,6 +142,8 @@ const dataArray = [];
 let numberOfSuccessfulEvents = 0;
 let numberOfFailedEvents = 0;
 let numberOfSkippedEvents = 0;
+let numberOfHeaderDiscrepancies = 0;
+let numberOfBodyDiscrepancies = 0;
 let totalResponseTime = 0;
 let startTime = 0;
 let finishTime = 0;
@@ -331,7 +334,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
 
     if (headers) config.headers = headers;
     if (config.headers.host) delete config.headers.host;
-    if (originalStatus == '401') {
+    if (originalStatus == '401'|| originalStatus.startsWith('50')) {
         resultLogger.info(`replay_status: -  |  original_status:${originalStatus}(Skipped)  |  url:${url}`)
         numberOfSkippedEvents += 1;
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
@@ -354,11 +357,13 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
                     if (!headersAreEqual) {
                         numberOfFailedEvents += 1;
+                        numberOfHeaderDiscrepancies += 1;
                         resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Headers |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
                     if ( !_.isEqual(resp_body, response.data)) {
                     numberOfFailedEvents += 1;
+                    numberOfBodyDiscrepancies += 1;
                     resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Body |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
                     return;
                     }
@@ -486,28 +491,31 @@ function generateReport(){
         if (Object.keys(hiddenStats) > 0) mainLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
     }
 
-    /*summaryLogger.info('___________________________________________________________________________');
-    summaryLogger.info(`Host: ${args.prefix}. Start time: ${startProcessTime.toISOString()}. Finish time: ${(new Date()).toISOString()}. Options: ${args.customQueryParams}`);
-    summaryLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents}. Number of the failed requests: ${numberOfFailedEvents}. Number of skipped requests: ${numberOfSkippedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents)).toFixed(2)}%.`);
-    summaryLogger.info(`Response time: ${JSON.stringify(getResponseTime(numStats,true))}`);
-    summaryLogger.info(`Percentile: ${JSON.stringify(getPercentile(numStats, true))}`);
-
-    summaryLogger.info(`Total requests time: ${(finishTime - startTime) / 1000} seconds. Total sleep time: ${(totalSleepTime / 1000).toFixed(2)} seconds.`);
-    summaryLogger.info(`Original time: ${(dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp) / 1000} seconds. Original rps: ${(1000 * dataArray.length / (dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp)).toFixed(4)}. Replay rps: ${((numberOfSuccessfulEvents+numberOfFailedEvents) * 1000 / (finishTime - startTime)).toFixed(4)}. Ratio: ${args.ratio}.`);
-    if (args.stats) {
-        const hiddenStats = {};
-        let sortedStats = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
+    if(args.summary) {
         summaryLogger.info('___________________________________________________________________________');
-        summaryLogger.info('Stats results:');
-        sortedStats.forEach(x => {
-            if (stats[x] > args.hideStatsLimit) {
-                summaryLogger.info(`${x} : ${stats[x]}`)
-            } else {
-                hiddenStats[stats[x]] ? hiddenStats[stats[x]] += 1 : hiddenStats[stats[x]] = 1;
-            }
-        });
-        if (Object.keys(hiddenStats) > 0) summaryLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
-    }*/
+        summaryLogger.info(`Host: ${args.prefix}. Start time: ${startProcessTime.toISOString()}. Finish time: ${(new Date()).toISOString()}. Options: ${args.customQueryParams}`);
+        summaryLogger.info(`Total number of requests: ${numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents}. Number of failed requests (different status): ${numberOfFailedEvents}. Number of skipped requests: ${numberOfSkippedEvents}. Percent of the successful requests: ${(100 * numberOfSuccessfulEvents / (numberOfSuccessfulEvents+numberOfFailedEvents+numberOfSkippedEvents)).toFixed(2)}%.`);
+        summaryLogger.info(`Total number of discrepancies: ${numberOfBodyDiscrepancies+numberOfHeaderDiscrepancies}. Number of Body discrepancies: ${numberOfBodyDiscrepancies}. Number of Header discrepancies: ${numberOfHeaderDiscrepancies}.`);
+        summaryLogger.info(`Response time: ${JSON.stringify(getResponseTime(numStats,true))}`);
+        summaryLogger.info(`Percentile: ${JSON.stringify(getPercentile(numStats, true))}`);
+
+        summaryLogger.info(`Total requests time: ${(finishTime - startTime) / 1000} seconds. Total sleep time: ${(totalSleepTime / 1000).toFixed(2)} seconds.`);
+        summaryLogger.info(`Original time: ${(dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp) / 1000} seconds. Original rps: ${(1000 * dataArray.length / (dataArray[dataArray.length - 1].timestamp - dataArray[0].timestamp)).toFixed(4)}. Replay rps: ${((numberOfSuccessfulEvents+numberOfFailedEvents) * 1000 / (finishTime - startTime)).toFixed(4)}. Ratio: ${args.ratio}.`);
+        if (args.stats) {
+            const hiddenStats = {};
+            let sortedStats = Object.keys(stats).sort((a, b) => stats[b] - stats[a]);
+            summaryLogger.info('___________________________________________________________________________');
+            summaryLogger.info('Stats results:');
+            sortedStats.forEach(x => {
+                if (stats[x] > args.hideStatsLimit) {
+                    summaryLogger.info(`${x} : ${stats[x]}`)
+                } else {
+                    hiddenStats[stats[x]] ? hiddenStats[stats[x]] += 1 : hiddenStats[stats[x]] = 1;
+                }
+            });
+            if (Object.keys(hiddenStats) > 0) summaryLogger.info(`Hidden stats: ${JSON.stringify(hiddenStats)}`);
+        }
+    }
 }
 function evaluateHeaders(originalHeaders, replayedHeaders){
   if (originalHeaders["x-total-count"])
