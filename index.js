@@ -361,7 +361,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Headers |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
-                    if ( !_.isEqual(resp_body, response.data)) {
+                    if (!_.isEmpty(resp_body) && !_.isEmpty(response.data) && !_.isEqual(resp_body, response.data)) {
                     numberOfFailedEvents += 1;
                     numberOfBodyDiscrepancies += 1;
                     resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Body |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
