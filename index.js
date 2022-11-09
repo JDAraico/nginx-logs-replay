@@ -321,7 +321,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     try {
       if (body) config.data = JSON.parse(body);
     } catch(error) {
-      resultLogger.info(`replay_status: -  |  original_status:${originalStatus}  |  url:${url}  |  error: ${error}  |  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
+      resultLogger.info(`replay_status: -  ||  original_status:${originalStatus}  ||  url:${url}  ||  error: ${error}  ||  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
       numberOfFailedEvents += 1;
       if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
         generateReport();
@@ -335,7 +335,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     if (headers) config.headers = headers;
     if (config.headers.host) delete config.headers.host;
     if (originalStatus == '401'|| originalStatus.startsWith('50')) {
-        resultLogger.info(`replay_status: -  |  original_status:${originalStatus}(Skipped)  |  url:${url}`)
+        resultLogger.info(`replay_status: -  ||  original_status:${originalStatus}(Skipped)  ||  url:${url}`)
         numberOfSkippedEvents += 1;
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
             generateReport();
@@ -358,13 +358,13 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     if (!headersAreEqual) {
                         numberOfFailedEvents += 1;
                         numberOfHeaderDiscrepancies += 1;
-                        resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Headers |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                        resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Headers  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
                     if (!_.isEmpty(resp_body) && !_.isEmpty(response.data) && !_.isEqual(resp_body, response.data)) {
                     numberOfFailedEvents += 1;
                     numberOfBodyDiscrepancies += 1;
-                    resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  response_discrepancy:Body |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                    resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Body  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                     return;
                     }
                     numberOfSuccessfulEvents += 1;
@@ -386,10 +386,10 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
             } else {
                 numberOfSkippedEvents += 1;
-                resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  |  original_status:${originalStatus}  |  url:${url}`)
+                resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  ||  original_status:${originalStatus}  ||  url:${url}`)
             }
         })
         .catch(function (error) {
@@ -423,7 +423,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${error.response.status}  |  original_status:${originalStatus}  |  replay_time:${(responseTime / 1000).toFixed(3)}  |  original_req_time:${request_time}  |  replay_url:${url}  |  Method:${method}  |  replay_resp_body:${JSON.stringify(error.response.data)}  |  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  |  replay_resp_headers:${JSON.stringify(error.response.headers)}  |  original_resp_headers:{${resp_headers}}`)
+                resultLogger.info(`replay_status:${error.response.status}  ||  original_status:${originalStatus}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(error.response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(error.response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
