@@ -321,7 +321,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     try {
       if (body) config.data = JSON.parse(body);
     } catch(error) {
-      resultLogger.info(`replay_status: -  ||  original_status:${originalStatus}  ||  url:${url}  ||  error: ${error}  ||  request_info: Method:${method} - Body:${body} - Headers:${headers}`)
+      resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time: -  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}} ||  replay_resp_headers: -`)
       numberOfFailedEvents += 1;
       if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
         generateReport();
@@ -329,13 +329,13 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
       return;
     }
     headers = JSON.parse('{'+ headers + '}');
+    if (headers.host) delete headers.host;
     let len = new TextEncoder().encode(body).length;
     headers['content-length'] = len;
 
     if (headers) config.headers = headers;
-    if (config.headers.host) delete config.headers.host;
-    if (originalStatus == '401'|| originalStatus.startsWith('50')) {
-        resultLogger.info(`replay_status: -  ||  original_status:${originalStatus}(Skipped)  ||  url:${url}`)
+    if ((originalStatus == '404' && (headers.authorization == undefined || headers.authorization == 'bearer')) || originalStatus.startsWith('50')) {
+        resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time: -  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}} ||  replay_resp_headers: -`)
         numberOfSkippedEvents += 1;
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
             generateReport();
@@ -345,7 +345,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     await axios(config)
         .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
-            if (response.status.toString() != '401') {
+            //if (response.status.toString() != '401') {
                 let responseTime = +new Date() - sendTime;
                 totalResponseTime += responseTime;
                 numStats.push(responseTime);
@@ -358,7 +358,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     if (headerDiscrepancies.length !== 0) {
                         numberOfFailedEvents += 1;
                         numberOfHeaderDiscrepancies += 1;
-                        resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
+                        resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
                         return;
                     }
                     let respBodyObj = JSON.parse(resp_body);
@@ -366,7 +366,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     numberOfFailedEvents += 1;
                     numberOfBodyDiscrepancies += 1;
                     let bodyDiscrepancies = _.differenceWith(_.toPairs(respBodyObj), _.toPairs(response.data), _.isEqual);
-                    resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
+                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
                     return;
                     }
                     numberOfSuccessfulEvents += 1;
@@ -388,15 +388,16 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
-            } else {
-                numberOfSkippedEvents += 1;
-                resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  ||  original_status:${originalStatus}  ||  url:${url}`)
-            }
+                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+            // } else {
+            //     numberOfSkippedEvents += 1;
+            //     resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  ||  original_status:${originalStatus}  ||  url:${url}`)
+            // }
         })
         .catch(function (error) {
             if (!error.response) {
                 mainLogger.error(`Invalid request to ${url} : ${error}`)
+                resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: -`)
                 numberOfFailedEvents += 1;
             } else {
                 if (originalStatus !== error.response.status.toString()) {
@@ -425,7 +426,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (error.response.data.debug.eth_node.time) statsEthNodeTime.push(error.response.data.debug.eth_node.time);
                     }
                 }
-                resultLogger.info(`replay_status:${error.response.status}  ||  original_status:${originalStatus}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(error.response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(error.response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
+                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${error.response.status}  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(error.response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(error.response.headers)}`)
             }
         }).then(function () {
         if (numberOfFailedEvents + numberOfSuccessfulEvents + numberOfSkippedEvents === dataArray.length) {
