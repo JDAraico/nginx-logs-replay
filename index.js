@@ -361,10 +361,11 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
-                    if ((!_.isEmpty(resp_body) || !_.isEmpty(response.data)) && !_.isEqual(resp_body, response.data)) {
+                    let respBodyObj = JSON.parse(resp_body);
+                    if ((!_.isEmpty(respBodyObj) || !_.isEmpty(response.data)) && !_.isEqual(respBodyObj, response.data)) {
                     numberOfFailedEvents += 1;
                     numberOfBodyDiscrepancies += 1;
-                    let bodyDiscrepancies = _.differenceWith([resp_body], [response.data], _.isEqual);
+                    let bodyDiscrepancies = _.differenceWith([respBodyObj], [response.data], _.isEqual);
                     resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Body - Discrepancies:${bodyDiscrepancies}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                     return;
                     }
