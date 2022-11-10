@@ -397,7 +397,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
         .catch(function (error) {
             if (!error.response) {
                 mainLogger.error(`Invalid request to ${url} : ${error}`)
-                resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: -`)
+                resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time: -  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: -`)
                 numberOfFailedEvents += 1;
             } else {
                 if (originalStatus !== error.response.status.toString()) {
