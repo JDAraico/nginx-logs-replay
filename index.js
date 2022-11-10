@@ -354,17 +354,18 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                     debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
                 } else {
                     let originalHeaders = JSON.parse('{' + resp_headers + '}');
-                    let headersAreEqual = evaluateHeaders(originalHeaders, response.headers);
-                    if (!headersAreEqual) {
+                    let headerDiscrepancies = evaluateHeaders(originalHeaders, response.headers);
+                    if (headerDiscrepancies.length !== 0) {
                         numberOfFailedEvents += 1;
                         numberOfHeaderDiscrepancies += 1;
-                        resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Headers  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
+                        resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                         return;
                     }
-                    if (!_.isEmpty(resp_body) && !_.isEmpty(response.data) && !_.isEqual(resp_body, response.data)) {
+                    if ((!_.isEmpty(resp_body) && !_.isEmpty(response.data)) || !_.isEqual(resp_body, response.data)) {
                     numberOfFailedEvents += 1;
                     numberOfBodyDiscrepancies += 1;
-                    resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Body  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
+                    let bodyDiscrepancies = _.differenceWith([resp_body], [response.data], _.isEqual);
+                    resultLogger.info(`replay_status:${response.status}  ||  original_status:${originalStatus}  ||  response_discrepancy:Body - Discrepancies:${bodyDiscrepancies}   ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  original_req_time:${request_time}  ||  replay_url:${url}  ||  Method:${method}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_headers:${JSON.stringify(response.headers)}  ||  original_resp_headers:{${resp_headers}}`)
                     return;
                     }
                     numberOfSuccessfulEvents += 1;
@@ -518,21 +519,22 @@ function generateReport(){
     }
 }
 function evaluateHeaders(originalHeaders, replayedHeaders){
-  if (originalHeaders["x-total-count"])
-        if (originalHeaders["x-total-count"] != replayedHeaders["x-total-count"])
-                return false;
-
-  if (originalHeaders["x-continuation-token"])
+    let discrepancies = [];
+    if (originalHeaders["x-continuation-token"])
         if (originalHeaders["x-continuation-token"] != replayedHeaders["x-continuation-token"])
-                return false;
+            discrepancies.push("x-continuation-token");
 
-  if (originalHeaders["content-type"])
+    if (originalHeaders["content-type"])
         if (originalHeaders["content-type"] != replayedHeaders["content-type"])
-                return false;
+            discrepancies.push("content-type");
 
-  if (originalHeaders["location"])
+    if (originalHeaders["location"])
         if (originalHeaders["location"] != replayedHeaders["location"])
-                return false;
+            discrepancies.push("location");
 
-  return true;
+    if (originalHeaders["x-total-count"])
+        if (originalHeaders["x-total-count"] != replayedHeaders["x-total-count"])
+            discrepancies.push("x-total-count");
+
+  return discrepancies;
 }
