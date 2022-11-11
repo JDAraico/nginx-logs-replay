@@ -345,54 +345,51 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     await axios(config)
         .then(function (response) { 
             debugLogger.info(`Response for ${url} with status code ${response.status} done with ${+new Date() - sendTime} ms`)
-            //if (response.status.toString() != '401') {
                 let responseTime = +new Date() - sendTime;
                 totalResponseTime += responseTime;
                 numStats.push(responseTime);
-                
-                if (originalStatus !== response.status.toString()) {
-                    debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
-                } else {
-                    let originalHeaders = JSON.parse('{' + resp_headers + '}');
-                    let headerDiscrepancies = evaluateHeaders(originalHeaders, response.headers);
-                    if (headerDiscrepancies.length !== 0) {
-                        numberOfFailedEvents += 1;
-                        numberOfHeaderDiscrepancies += 1;
-                        resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
-                        return;
+                    if (originalStatus !== response.status.toString()) {
+                        debugLogger.info(`Response for ${url} has different status code: ${response.status} and ${originalStatus}`);
+                    } else {
+                        let originalHeaders = JSON.parse('{' + resp_headers + '}');
+                        let headerDiscrepancies = evaluateHeaders(originalHeaders, response.headers);
+                        if (headerDiscrepancies.length !== 0) {
+                            numberOfFailedEvents += 1;
+                            numberOfHeaderDiscrepancies += 1;
+                            resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+                            return;
+                        }
+                        if (method != 'POST') {
+                            let respBodyObj = JSON.parse(resp_body);
+                            if ((!_.isEmpty(respBodyObj) || !_.isEmpty(response.data)) && !_.isEqual(respBodyObj, response.data)) {
+                                numberOfFailedEvents += 1;
+                                numberOfBodyDiscrepancies += 1;
+                                let bodyDiscrepancies = _.differenceWith(_.toPairs(respBodyObj), _.toPairs(response.data), _.isEqual);
+                                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+                                return;
+                            }
+                        }
+                        numberOfSuccessfulEvents += 1;
                     }
-                    let respBodyObj = JSON.parse(resp_body);
-                    if ((!_.isEmpty(respBodyObj) || !_.isEmpty(response.data)) && !_.isEqual(respBodyObj, response.data)) {
-                    numberOfFailedEvents += 1;
-                    numberOfBodyDiscrepancies += 1;
-                    let bodyDiscrepancies = _.differenceWith(_.toPairs(respBodyObj), _.toPairs(response.data), _.isEqual);
-                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
-                    return;
-                    }
-                    numberOfSuccessfulEvents += 1;
-                }
+
                     if (response.data.debug){
-                    if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
-                    if (response.data.debug.mongoTxFast) statsMongoTxFastTime.push(response.data.debug.mongoTxFast);
-                    if (response.data.debug.mongoTxFull) statsMongoTxFullTime.push(response.data.debug.mongoTxFull);
-                    if (response.data.debug.clickhouse) statsClickHouseTime.push(response.data.debug.clickhouse);
-                    if (response.data.debug.php) statsPHPTime.push(response.data.debug.php);
-                    if (response.data.debug.redis){
-                        if (response.data.debug.redis.read_num) statsRedisReadNumber.push(response.data.debug.redis.read_num);
-                        if (response.data.debug.redis.read_time) statsRedisReadTime.push(response.data.debug.redis.read_time);
-                        if (response.data.debug.redis.write_num) statsRedisWriteNumber.push(response.data.debug.redis.write_num);
-                        if (response.data.debug.redis.write_time) statsRedisWriteTime.push(response.data.debug.redis.write_time);
+                        if (response.data.debug.mongo) statsMongoTime.push(response.data.debug.mongo);
+                        if (response.data.debug.mongoTxFast) statsMongoTxFastTime.push(response.data.debug.mongoTxFast);
+                        if (response.data.debug.mongoTxFull) statsMongoTxFullTime.push(response.data.debug.mongoTxFull);
+                        if (response.data.debug.clickhouse) statsClickHouseTime.push(response.data.debug.clickhouse);
+                        if (response.data.debug.php) statsPHPTime.push(response.data.debug.php);
+                        if (response.data.debug.redis){
+                            if (response.data.debug.redis.read_num) statsRedisReadNumber.push(response.data.debug.redis.read_num);
+                            if (response.data.debug.redis.read_time) statsRedisReadTime.push(response.data.debug.redis.read_time);
+                            if (response.data.debug.redis.write_num) statsRedisWriteNumber.push(response.data.debug.redis.write_num);
+                            if (response.data.debug.redis.write_time) statsRedisWriteTime.push(response.data.debug.redis.write_time);
+                        }
+                        if (response.data.debug.eth_node){
+                            if (response.data.debug.eth_node.num) statsEthNodeNumber.push(response.data.debug.eth_node.num);
+                            if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
+                        }
                     }
-                    if (response.data.debug.eth_node){
-                        if (response.data.debug.eth_node.num) statsEthNodeNumber.push(response.data.debug.eth_node.num);
-                        if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
-                    }
-                }
-                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
-            // } else {
-            //     numberOfSkippedEvents += 1;
-            //     resultLogger.info(`replay_status: ${response.status.toString()}(Skipped)  ||  original_status:${originalStatus}  ||  url:${url}`)
-            // }
+                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? '""' : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
         })
         .catch(function (error) {
             if (!error.response) {
@@ -530,9 +527,8 @@ function evaluateHeaders(originalHeaders, replayedHeaders){
         if (originalHeaders["content-type"] != replayedHeaders["content-type"])
             discrepancies.push("content-type");
 
-    if (originalHeaders["location"])
-        if (originalHeaders["location"] != replayedHeaders["location"])
-            discrepancies.push("location");
+    if ((originalHeaders["location"] && !replayedHeaders["location"]) || (!originalHeaders["location"] && replayedHeaders["location"]))
+        discrepancies.push("location");
 
     if (originalHeaders["x-total-count"])
         if (originalHeaders["x-total-count"] != replayedHeaders["x-total-count"])
