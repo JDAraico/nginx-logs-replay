@@ -357,7 +357,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                         if (headerDiscrepancies.length !== 0) {
                             numberOfFailedEvents += 1;
                             numberOfHeaderDiscrepancies += 1;
-                            resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+                            resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Headers - Discrepancies:${JSON.stringify(headerDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${(response.data === undefined) ? null : JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
                             return;
                         }
                         if (method != 'POST') {
@@ -368,7 +368,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                                 numberOfFailedEvents += 1;
                                 numberOfBodyDiscrepancies += 1;
                                 let bodyDiscrepancies = _.differenceWith(_.toPairs(respBodyObj), _.toPairs(response.data), _.isEqual);
-                                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+                                resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy:Body - Discrepancies:${JSON.stringify(bodyDiscrepancies)}  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${(response.data === undefined) ? null : JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
                                 return;
                             }
                         }
@@ -392,7 +392,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                             if (response.data.debug.eth_node.time) statsEthNodeTime.push(response.data.debug.eth_node.time);
                         }
                     }
-                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
+                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status:${response.status}  ||  response_discrepancy: -  ||  original_req_time:${request_time}  ||  replay_time:${(responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body === undefined) ? null : resp_body}  ||  replay_resp_body:${(response.data === undefined) ? null : JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers:${JSON.stringify(response.headers)}`)
             }
             catch(error) {
                 numberOfFailedEvents += 1;
