@@ -13,7 +13,7 @@ const _ = require('lodash');
 
 program.version(process.env.npm_package_version);
 
-const defaultFormat = '$remote_addr [$time_local] "$request" $status $body_bytes_sent req_time:$request_time req_body:$req_body resp_body:$resp_body req_headers:{$request_headers} resp_headers:{$resp_headers}';
+const defaultFormat = '$remote_addr [$time_local] "$request" $status $body_bytes_sent req_time:$request_time req_body:$req_body resp_body:$resp_body\treq_headers:{$request_headers} resp_headers:{$resp_headers}';
 const defaultFormatTime = 'DD/MMM/YYYY:HH:mm:ss Z';
 
 program
@@ -332,6 +332,7 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
     if (headers.host) delete headers.host;
     let len = new TextEncoder().encode(body).length;
     headers['content-length'] = len;
+    headers['nginx-replay'] = len;
 
     if (headers) config.headers = headers;
     if ((originalStatus == '404' && (headers.authorization == undefined || headers.authorization == 'bearer')) || originalStatus.startsWith('50')) {
