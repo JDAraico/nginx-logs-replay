@@ -408,7 +408,12 @@ async function sendRequest(method, url, sendTime, agent, originalStatus, body, h
                 let responseTime = +new Date() - sendTime;
                 totalResponseTime += responseTime;
                 numStats.push(responseTime);
-                resultLogger.info(`original_status:${originalStatus}  ||  replay_status: ${(response.status === undefined) ? '-' : response.status}  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time: ${(responseTime === undefined) ? '-' : (responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body) ? resp_body : '""'}  ||  replay_resp_body: ${(response.data === undefined) ? '-' : JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: ${(response.headers === undefined) ? '-' : JSON.stringify(response.headers)}`)
+                if (response) {
+                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status: ${(response.status === undefined) ? '-' : response.status}  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time: ${(responseTime === undefined) ? '-' : (responseTime / 1000).toFixed(3)}  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body) ? resp_body : '""'}  ||  replay_resp_body: ${(response.data === undefined) ? '-' : JSON.stringify(response.data)}  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: ${(response.headers === undefined) ? '-' : JSON.stringify(response.headers)}`)
+                }
+                else {
+                    resultLogger.info(`original_status:${originalStatus}  ||  replay_status: -  ||  response_discrepancy: ${error}  ||  original_req_time:${request_time}  ||  replay_time: -  ||  replay_url:${url}  ||  Method:${method}  ||  original_resp_body:${(resp_body) ? resp_body : '""'}  ||  replay_resp_body: -  ||  original_resp_headers:{${resp_headers}}  ||  replay_resp_headers: -`)
+                }
                 numberOfFailedEvents += 1;
             } else {
                 if (originalStatus !== error.response.status.toString()) {
